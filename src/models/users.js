@@ -7,7 +7,9 @@ async function createUser({ id, username, passwordHash, public_key_quantum }) {
     VALUES ($1,$2,$3,$4,NOW())
     RETURNING id, username, public_key_quantum, created_at
   `;
-  const params = [id, username, passwordHash, public_key_quantum];
+  // Si la columna public_key_quantum es NOT NULL en tu esquema, mandamos '' en lugar de null
+  const publicKeyParam = public_key_quantum == null ? '' : public_key_quantum;
+  const params = [id, username, passwordHash, publicKeyParam];
   const res = await db.query(sql, params);
   return res.rows[0];
 }
