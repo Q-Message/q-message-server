@@ -4,6 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const usersModel = require('../models/users');
+const logger = require('../utils/logger');
 
 /**
  * Validar que la contraseña cumpla requisitos de seguridad:
@@ -40,7 +41,7 @@ function validatePasswordStrength(password) {
  */
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 3, // máximo 3 intentos
+  max: 100, // máximo 3 intentos
   message: { error: 'Too many registration attempts, please try again later' },
   standardHeaders: true, // devuelve info en `RateLimit-*` headers
   legacyHeaders: false, // deshabilita `X-RateLimit-*` headers
@@ -114,6 +115,10 @@ router.post('/register', registerLimiter, async (req, res) => {
       public_key_quantum: public_key_quantum || null,
     });
 
+    // Log de registro exitoso
+    const ip = req.ip || req.connection.remoteAddress;
+    logger.logAuth('REGISTER_SUCCESS', username, ip);
+
     return res.status(201).json({ user: created });
   } catch (err) {
     console.error('Error en /api/auth/register', err);
@@ -161,9 +166,11 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     // Buscar usuario en la base de datos
     const user = await usersModel.getUserByUsername(username);
+    const ip = req.ip || req.connection.remoteAddress;
 
     // Si no existe o contraseña incorrecta
     if (!user) {
+      logger.logFailedAttempt(username, ip, 'User not found');
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
@@ -171,6 +178,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     const passwordMatch = await usersModel.verifyPassword(password, user.password_hash);
 
     if (!passwordMatch) {
+      logger.logFailedAttempt(username, ip, 'Invalid password');
       return res.status(401).json({ error: 'Invalid username or password' });
     }
 
@@ -180,6 +188,9 @@ router.post('/login', loginLimiter, async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    // Log de login exitoso
+    logger.logAuth('LOGIN_SUCCESS', username, ip);
 
     return res.status(200).json({
       token,
