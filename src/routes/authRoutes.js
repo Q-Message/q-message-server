@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 const usersModel = require('../models/users');
 
 /**
@@ -43,6 +44,18 @@ const registerLimiter = rateLimit({
   message: { error: 'Too many registration attempts, please try again later' },
   standardHeaders: true, // devuelve info en `RateLimit-*` headers
   legacyHeaders: false, // deshabilita `X-RateLimit-*` headers
+});
+
+/**
+ * Rate limiting para login: máximo 5 intentos por 15 minutos por IP
+ * Evita ataques de fuerza bruta
+ */
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 5, // máximo 5 intentos
+  message: { error: 'Too many login attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 /**
@@ -112,6 +125,74 @@ router.post('/register', registerLimiter, async (req, res) => {
     }
 
     // Cualquier otro error en la DB
+    if (err.code && err.severity) {
+      console.error(`DB Error [${err.code}]: ${err.message}`);
+      return res.status(500).json({ error: 'Database error, please try again later' });
+    }
+
+    // Error genérico
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/auth/login
+ * Body: { username, password }
+ * Respuestas:
+ * - 200 OK: login exitoso, devuelve JWT token
+ * - 400 Bad Request: username o password faltando
+ * - 401 Unauthorized: credenciales inválidas
+ * - 429 Too Many Requests: rate limit excedido
+ * - 500 Internal Server Error: error interno
+ */
+router.post('/login', loginLimiter, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Validar campos obligatorios
+    if (!username || !password) {
+      return res.status(400).json({ error: 'username and password required' });
+    }
+
+    // Validar tipo de datos
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'username and password must be strings' });
+    }
+
+    // Buscar usuario en la base de datos
+    const user = await usersModel.getUserByUsername(username);
+
+    // Si no existe o contraseña incorrecta
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // Verificar contraseña
+    const passwordMatch = await usersModel.verifyPassword(password, user.password_hash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+
+    // Generar JWT token
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        public_key_quantum: user.public_key_quantum,
+      },
+    });
+  } catch (err) {
+    console.error('Error en /api/auth/login', err);
+
+    // Cualquier error en la DB
     if (err.code && err.severity) {
       console.error(`DB Error [${err.code}]: ${err.message}`);
       return res.status(500).json({ error: 'Database error, please try again later' });
