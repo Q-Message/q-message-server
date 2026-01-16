@@ -61,26 +61,26 @@ const loginLimiter = rateLimit({
 
 /**
  * POST /api/auth/register
- * Body: { username, password, public_key_quantum? }
+ * Body: { username, email, password, public_key_quantum? }
  * Respuestas:
  * - 201 Created: usuario creado exitosamente
- * - 400 Bad Request: validación fallida (username/password inválidos)
- * - 409 Conflict: username ya existe
+ * - 400 Bad Request: validación fallida (username/email/password inválidos)
+ * - 409 Conflict: username o email ya existe
  * - 429 Too Many Requests: rate limit excedido
  * - 500 Internal Server Error: error interno
  */
 router.post('/register', registerLimiter, async (req, res) => {
   try {
-    const { username, password, public_key_quantum } = req.body;
+    const { username, email, password, public_key_quantum } = req.body;
 
     // Validar campos obligatorios
-    if (!username || !password) {
-      return res.status(400).json({ error: 'username and password required' });
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'username, email and password required' });
     }
 
     // Validar tipo de datos
-    if (typeof username !== 'string' || typeof password !== 'string') {
-      return res.status(400).json({ error: 'username and password must be strings' });
+    if (typeof username !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'username, email and password must be strings' });
     }
 
     // Validar longitud de username
@@ -91,6 +91,11 @@ router.post('/register', registerLimiter, async (req, res) => {
     // Validar caracteres permitidos en username (alfanuméricos, guión, guión bajo)
     if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
       return res.status(400).json({ error: 'username can only contain letters, numbers, underscores, and hyphens' });
+    }
+
+    // Validar formato de email
+    if (!usersModel.validateEmailFormat(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
     }
 
     // Validar fortaleza de contraseña
@@ -111,6 +116,7 @@ router.post('/register', registerLimiter, async (req, res) => {
     const created = await usersModel.createUser({
       id,
       username,
+      email,
       passwordHash,
       public_key_quantum: public_key_quantum || null,
     });
@@ -123,10 +129,13 @@ router.post('/register', registerLimiter, async (req, res) => {
   } catch (err) {
     console.error('Error en /api/auth/register', err);
 
-    // Manejar error específico: constraint unique violado (username duplicado)
+    // Manejar error específico: constraint unique violado (username/email duplicado)
     // Código SQL: 23505 = unique_violation
+    if (err.message && err.message.includes('already exists')) {
+      return res.status(409).json({ error: err.message });
+    }
     if (err.code === '23505') {
-      return res.status(409).json({ error: 'Username already exists' });
+      return res.status(409).json({ error: 'Username or email already exists' });
     }
 
     // Cualquier otro error en la DB
@@ -142,61 +151,63 @@ router.post('/register', registerLimiter, async (req, res) => {
 
 /**
  * POST /api/auth/login
- * Body: { username, password }
+ * Body: { username_or_email, password }
+ * Puedes loguearte con username O con email
  * Respuestas:
  * - 200 OK: login exitoso, devuelve JWT token
- * - 400 Bad Request: username o password faltando
+ * - 400 Bad Request: username_or_email o password faltando
  * - 401 Unauthorized: credenciales inválidas
  * - 429 Too Many Requests: rate limit excedido
  * - 500 Internal Server Error: error interno
  */
 router.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username_or_email, password } = req.body;
 
     // Validar campos obligatorios
-    if (!username || !password) {
-      return res.status(400).json({ error: 'username and password required' });
+    if (!username_or_email || !password) {
+      return res.status(400).json({ error: 'username_or_email and password required' });
     }
 
     // Validar tipo de datos
-    if (typeof username !== 'string' || typeof password !== 'string') {
-      return res.status(400).json({ error: 'username and password must be strings' });
+    if (typeof username_or_email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: 'username_or_email and password must be strings' });
     }
 
-    // Buscar usuario en la base de datos
-    const user = await usersModel.getUserByUsername(username);
+    // Buscar usuario por username O email
+    const user = await usersModel.getUserByUsernameOrEmail(username_or_email);
     const ip = req.ip || req.connection.remoteAddress;
 
     // Si no existe o contraseña incorrecta
     if (!user) {
-      logger.logFailedAttempt(username, ip, 'User not found');
-      return res.status(401).json({ error: 'Invalid username or password' });
+      logger.logFailedAttempt(username_or_email, ip, 'User not found');
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Verificar contraseña
     const passwordMatch = await usersModel.verifyPassword(password, user.password_hash);
 
     if (!passwordMatch) {
-      logger.logFailedAttempt(username, ip, 'Invalid password');
-      return res.status(401).json({ error: 'Invalid username or password' });
+      logger.logFailedAttempt(username_or_email, ip, 'Invalid password');
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Generar JWT token
     const token = jwt.sign(
-      { id: user.id, username: user.username },
+      { id: user.id, username: user.username, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
     // Log de login exitoso
-    logger.logAuth('LOGIN_SUCCESS', username, ip);
+    logger.logAuth('LOGIN_SUCCESS', user.username, ip);
 
     return res.status(200).json({
       token,
       user: {
         id: user.id,
         username: user.username,
+        email: user.email,
         public_key_quantum: user.public_key_quantum,
       },
     });

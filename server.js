@@ -20,6 +20,8 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+
+
 // Aquí conectas tus rutas
 app.use('/api/auth', authRoutes);
 
