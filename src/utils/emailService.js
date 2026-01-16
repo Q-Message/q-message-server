@@ -20,7 +20,7 @@ async function sendVerificationCode(to, username, verificationCode) {
     const response = await axios.post(
       RESEND_URL,
       {
-        from: 'Q-Message <onboarding@resend.dev>',
+        from: 'Q-Message <verificacion@qmessage.info>',
         to: to,
         subject: "Tu código de verificación de Q-Message",
         html: `
@@ -148,7 +148,7 @@ async function sendWelcomeEmail(to, username) {
     const response = await axios.post(
       RESEND_URL,
       {
-        from: 'Q-Message <onboarding@resend.dev>',
+        from: 'Q-Message <verificacion@qmessage.info>',
         to: to,
         subject: 'Cuenta verificada - Q-Message',
         html: `

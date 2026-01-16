@@ -42,7 +42,7 @@ async function createUser({ id, username, email, passwordHash, public_key_quantu
 // 2. Buscar usuario por username
 async function getUserByUsername(username) {
   const sql = `
-    SELECT id, username, email, password_hash, public_key_quantum
+    SELECT id, username, email, password_hash, public_key_quantum, is_verified
     FROM users
     WHERE username = $1
   `;

@@ -97,6 +97,81 @@ router.post('/register', registerLimiter, async (req, res) => {
 });
 
 /**
+ * RUTA: POST /api/auth/login
+ * Inicia sesión y devuelve un token JWT
+ */
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Máximo 5 intentos de login por IP en 15 min
+  message: { error: 'Demasiados intentos de login, prueba más tarde' }
+});
+
+router.post('/login', loginLimiter, async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // 1. Validaciones básicas
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username y password son obligatorios' });
+    }
+
+    // 2. Buscar usuario por username
+    const user = await usersModel.getUserByUsername(username);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // 3. Verificar contraseña
+    const isValidPassword = await usersModel.verifyPassword(password, user.password_hash);
+    
+    if (!isValidPassword) {
+      const ip = req.ip || req.connection.remoteAddress;
+      logger.logAuth('LOGIN_FAILED', username, ip);
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // 4. Verificar que la cuenta esté verificada
+    if (!user.is_verified) {
+      return res.status(403).json({ 
+        error: 'Cuenta no verificada',
+        message: 'Por favor verifica tu email antes de iniciar sesión'
+      });
+    }
+
+    // 5. Generar token JWT
+    const token = jwt.sign(
+      { 
+        userId: user.id, 
+        username: user.username 
+      },
+      process.env.JWT_SECRET || 'tu_clave_secreta_jwt_cambiar_en_produccion',
+      { expiresIn: '7d' }
+    );
+
+    // 6. Log exitoso
+    const ip = req.ip || req.connection.remoteAddress;
+    logger.logAuth('LOGIN_SUCCESS', username, ip);
+
+    // 7. Respuesta
+    return res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        public_key_quantum: user.public_key_quantum
+      }
+    });
+
+  } catch (err) {
+    console.error('Error en login:', err);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+/**
  * RUTA: POST /api/auth/verify
  * Activa la cuenta si el código es correcto
  */

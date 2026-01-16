@@ -16,9 +16,9 @@ API_BASE="$SERVER_URL/api/auth"
 
 # Variables por defecto
 TIMESTAMP=$(date +%s)
-USERNAME="${1:-arrojoman1uel}"  # Username único con timestamp
+USERNAME="${1:-nigga}"  # Username único con timestamp
 PASSWORD="${2:-Test@13Ae1sad23AA!}"
-EMAIL="${EMAIL:-arrojomanuel01@gmail.com}"
+EMAIL="${EMAIL:-nigga@gmail.com}"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}        PRUEBA DE REGISTRO${NC}"
@@ -67,7 +67,7 @@ if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
   LOGIN_RESPONSE=$(curl -s -k -X POST "$API_BASE/login" \
     -H "Content-Type: application/json" \
     -d "{
-      \"username_or_email\": \"$EMAIL\",
+      \"username\": \"$USERNAME\",
       \"password\": \"$PASSWORD\"
     }")
   
