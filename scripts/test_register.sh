@@ -16,9 +16,9 @@ API_BASE="$SERVER_URL/api/auth"
 
 # Variables por defecto
 TIMESTAMP=$(date +%s)
-USERNAME="${1:-pNigers1asasdd221123}"  # Username único con timestamp
+USERNAME="${1:-arrojoman1uel}"  # Username único con timestamp
 PASSWORD="${2:-Test@13Ae1sad23AA!}"
-EMAIL="${EMAIL:-palenciahugo17@gmail.com}"
+EMAIL="${EMAIL:-arrojomanuel01@gmail.com}"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}        PRUEBA DE REGISTRO${NC}"

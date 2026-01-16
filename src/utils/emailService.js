@@ -22,7 +22,7 @@ async function sendVerificationCode(to, username, verificationCode) {
       {
         from: 'Q-Message <onboarding@resend.dev>',
         to: to,
-        subject: `${verificationCode} - Tu código de verificación de Q-Message`,
+        subject: "Tu código de verificación de Q-Message",
         html: `
           <!DOCTYPE html>
             <html lang="es">
