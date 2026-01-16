@@ -40,7 +40,7 @@ async function sendVerificationCode(to, username, verificationCode) {
                                 <!-- Header -->
                                 <tr>
                                     <td align="center" style="padding: 50px 40px 30px;">
-                                        <img src="https://i.imgur.com/your-logo.png" alt="Q-Message" width="80" height="80" style="display: block; margin: 0 auto 20px;">
+                                        <img src="https://freeimage.host/i/fSivaft" alt="Q-Message" width="80" height="80" style="display: block; margin: 0 auto 20px;">
                                         <h1 style="margin: 0; color: #a855f7; font-size: 32px; font-weight: 600; letter-spacing: -0.5px;">Q-MESSAGE</h1>
                                         <p style="margin: 8px 0 0; color: #9ca3af; font-size: 14px; letter-spacing: 0.5px;">CIFRADO CUÁNTICO</p>
                                     </td>
@@ -168,7 +168,7 @@ async function sendWelcomeEmail(to, username) {
                                 <!-- Header -->
                                 <tr>
                                     <td align="center" style="padding: 50px 40px 30px;">
-                                        <img src="https://i.imgur.com/your-logo.png" alt="Q-Message" width="80" height="80" style="display: block; margin: 0 auto 20px;">
+                                        <img src="https://freeimage.host/i/fSivaft" alt="Q-Message" width="80" height="80" style="display: block; margin: 0 auto 20px;">
                                         <h1 style="margin: 0; color: #a855f7; font-size: 32px; font-weight: 600; letter-spacing: -0.5px;">Q-MESSAGE</h1>
                                         <p style="margin: 8px 0 0; color: #9ca3af; font-size: 14px; letter-spacing: 0.5px;">CIFRADO CUÁNTICO</p>
                                     </td>
