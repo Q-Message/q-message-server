@@ -1,7 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const helmet = require('helmet');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 const authRoutes = require('./src/routes/authRoutes');
 
 // ============ VALIDACIONES DE SEGURIDAD EN STARTUP ============
@@ -16,6 +18,13 @@ if (!process.env.CORS_ORIGIN) {
 console.log('✅ Configuración de seguridad validada');
 
 const app = express();
+
+// ============ SEGURIDAD: Headers HTTP con Helmet ============
+app.use(helmet({
+  contentSecurityPolicy: false, // Desabilitar CSP si causa problemas con Socket.io
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+console.log('✅ Helmet.js activado (headers de seguridad HTTP)');
 
 // Configuración de CORS
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
