@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const usersModel = require('../models/users');
 const logger = require('../utils/logger');
+const emailService = require('../utils/emailService');
 
 /**
  * Validar que la contraseña cumpla requisitos de seguridad:
@@ -112,6 +113,9 @@ router.post('/register', registerLimiter, async (req, res) => {
     // Hashear contraseña
     const passwordHash = await usersModel.hashPassword(password);
 
+    // Generar código de verificación de 6 dígitos
+    const verificationCode = usersModel.generateVerificationCode();
+
     // Crear usuario en la base de datos
     const created = await usersModel.createUser({
       id,
@@ -119,13 +123,26 @@ router.post('/register', registerLimiter, async (req, res) => {
       email,
       passwordHash,
       public_key_quantum: public_key_quantum || null,
+      verificationCode,
     });
+
+    // Enviar email con el código de verificación (no bloquea el registro si falla)
+    let emailSent = false;
+    try {
+      const sendResult = await emailService.sendVerificationCode(email, username, verificationCode);
+      emailSent = !!(sendResult && sendResult.success);
+      if (!emailSent) {
+        console.error('No se pudo enviar el email de verificación:', sendResult && sendResult.error);
+      }
+    } catch (e) {
+      console.error('Error enviando email de verificación:', e.message);
+    }
 
     // Log de registro exitoso
     const ip = req.ip || req.connection.remoteAddress;
     logger.logAuth('REGISTER_SUCCESS', username, ip);
 
-    return res.status(201).json({ user: created });
+    return res.status(201).json({ user: created, email_sent: emailSent });
   } catch (err) {
     console.error('Error en /api/auth/register', err);
 
@@ -221,6 +238,102 @@ router.post('/login', loginLimiter, async (req, res) => {
     }
 
     // Error genérico
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/auth/verify
+ * Body: { userId, code }
+ * Verificar código de verificación
+ * Respuestas:
+ * - 200 OK: código válido, usuario verificado
+ * - 400 Bad Request: código inválido o expirado
+ * - 500 Internal Server Error: error interno
+ */
+router.post('/verify', async (req, res) => {
+  const { userId, code } = req.body;
+
+  try {
+    const result = await usersModel.validateVerificationCode(userId, code);
+
+    if (!result.valid) {
+      return res.status(400).json({ message: result.message });
+    }
+
+    // Actualizar is_verified a true
+    const db = require('../config/db');
+    await db.query('UPDATE users SET is_verified = true WHERE id = $1', [userId]);
+
+    return res.json({ success: true, message: 'Cuenta verificada con éxito' });
+  } catch (error) {
+    console.error('Error en /api/auth/verify', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/auth/resend-verification
+ * Body: { userId }
+ * Reenviar código de verificación
+ * Respuestas:
+ * - 200 OK: código reenviado
+ * - 404 Not Found: usuario no existe
+ * - 400 Bad Request: usuario ya verificado
+ * - 429 Too Many Requests: rate limit excedido
+ * - 500 Internal Server Error: error interno
+ */
+router.post('/resend-verification', registerLimiter, async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+    // Validar campos obligatorios
+    if (!userId) {
+      return res.status(400).json({ error: 'userId required' });
+    }
+
+    // Obtener usuario por ID
+    const db = require('../config/db');
+    const userResult = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Verificar que no esté ya verificado
+    if (user.is_verified) {
+      return res.status(400).json({ error: 'User already verified' });
+    }
+
+    // Generar nuevo código de verificación
+    const newCode = usersModel.generateVerificationCode();
+    const codeExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // +5 minutos
+    
+    await db.query(
+      'UPDATE users SET verification_code = $1, code_expires_at = $2 WHERE id = $3',
+      [newCode, codeExpiresAt, userId]
+    );
+
+    // Enviar email con el nuevo código
+    let emailSent = false;
+    try {
+      const sendResult = await emailService.sendVerificationCode(user.email, user.username, newCode);
+      emailSent = !!(sendResult && sendResult.success);
+      if (!emailSent) {
+        console.error('No se pudo enviar el email de verificación:', sendResult && sendResult.error);
+      }
+    } catch (e) {
+      console.error('Error enviando email de verificación:', e.message);
+    }
+
+    const ip = req.ip || req.connection.remoteAddress;
+    logger.logAuth('RESEND_VERIFICATION', user.username, ip);
+
+    return res.json({ success: true, email_sent: emailSent, message: 'Verification code resent' });
+  } catch (error) {
+    console.error('Error en /api/auth/resend-verification', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

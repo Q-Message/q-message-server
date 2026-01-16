@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/TFGDAM/q-message-server#readme",
   "dependencies": {
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

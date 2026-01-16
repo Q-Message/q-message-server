@@ -1,18 +1,25 @@
 const db = require('../../src/config/db');
 const bcrypt = require('bcrypt');
 
-// 1. Crear usuario con email
-async function createUser({ id, username, email, passwordHash, public_key_quantum }) {
+// Generar código de verificación de 6 dígitos random
+function generateVerificationCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// 1. Crear usuario con email y código de verificación
+async function createUser({ id, username, email, passwordHash, public_key_quantum, verificationCode }) {
+  const codeExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // +5 minutos
+  
   const sql = `
-    INSERT INTO users (id, username, email, password_hash, public_key_quantum, created_at)
-    VALUES ($1, $2, $3, $4, $5, NOW())
-    RETURNING id, username, email, public_key_quantum, created_at
+    INSERT INTO users (id, username, email, password_hash, public_key_quantum, verification_code, code_expires_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING id, username, email, public_key_quantum, verification_code, code_expires_at, created_at
   `;
   
   // Manejo de la clave cuántica (permitimos null si no viene)
   const publicKeyParam = public_key_quantum == null ? '' : public_key_quantum;
   
-  const params = [id, username, email, passwordHash, publicKeyParam];
+  const params = [id, username, email, passwordHash, publicKeyParam, verificationCode, codeExpiresAt];
   
   try {
     const res = await db.query(sql, params);
@@ -74,7 +81,7 @@ function validateEmailFormat(email) {
   return emailRegex.test(email);
 }
 
-// Funciones de hash y verificación (sin cambios)
+// Funciones de hash y verificación
 async function hashPassword(plainPassword) {
   const saltRounds = 10;
   return bcrypt.hash(plainPassword, saltRounds);
@@ -82,6 +89,30 @@ async function hashPassword(plainPassword) {
 
 async function verifyPassword(plainPassword, hashedPassword) {
   return bcrypt.compare(plainPassword, hashedPassword);
+}
+
+// 6. Validar código de verificación
+async function validateVerificationCode(userId, code) {
+  const sql = `
+    SELECT id, username, email, verification_code, code_expires_at
+    FROM users
+    WHERE id = $1 AND verification_code = $2
+  `;
+  const params = [userId, code];
+  const res = await db.query(sql, params);
+  
+  if (res.rows.length === 0) {
+    return { valid: false, message: 'Invalid verification code' };
+  }
+  
+  const user = res.rows[0];
+  const now = new Date();
+  
+  if (now > user.code_expires_at) {
+    return { valid: false, message: 'Verification code has expired' };
+  }
+  
+  return { valid: true, user };
 }
 
 module.exports = {
@@ -92,4 +123,6 @@ module.exports = {
   getUserByUsernameOrEmail,
   validateEmailFormat,
   verifyPassword,
+  generateVerificationCode,
+  validateVerificationCode,
 };

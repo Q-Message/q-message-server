@@ -15,8 +15,10 @@ SERVER_URL="${SERVER_URL:-https://194.9.6.94:3000}"
 API_BASE="$SERVER_URL/api/auth"
 
 # Variables por defecto
-USERNAME="${1:-testuser23412314}"  # Username único con timestamp
-PASSWORD="${2:-Test@123412313}"
+TIMESTAMP=$(date +%s)
+USERNAME="${1:-pNigers1asasdd221123}"  # Username único con timestamp
+PASSWORD="${2:-Test@13Ae1sad23AA!}"
+EMAIL="${EMAIL:-palenciahugo17@gmail.com}"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}        PRUEBA DE REGISTRO${NC}"
@@ -27,6 +29,7 @@ echo ""
 echo -e "${YELLOW}1. Intentando REGISTRO...${NC}"
 echo "   Servidor: $SERVER_URL"
 echo "   Username: $USERNAME"
+echo "   Email: $EMAIL"
 echo "   Password: $PASSWORD"
 echo ""
 
@@ -34,6 +37,7 @@ REGISTER_RESPONSE=$(curl -s -k -X POST "$API_BASE/register" \
   -H "Content-Type: application/json" \
   -d "{
     \"username\": \"$USERNAME\",
+    \"email\": \"$EMAIL\",
     \"password\": \"$PASSWORD\"
   }")
 
@@ -43,6 +47,9 @@ echo ""
 
 # Verificar si el registro fue exitoso
 USER_ID=$(echo "$REGISTER_RESPONSE" | jq -r '.user.id' 2>/dev/null)
+USER_EMAIL=$(echo "$REGISTER_RESPONSE" | jq -r '.user.email' 2>/dev/null)
+EMAIL_SENT=$(echo "$REGISTER_RESPONSE" | jq -r '.email_sent' 2>/dev/null)
+VERIFICATION_CODE=$(echo "$REGISTER_RESPONSE" | jq -r '.user.verification_code' 2>/dev/null)
 
 if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
   echo -e "${GREEN}✓ Registro exitoso!${NC}"
@@ -50,6 +57,8 @@ if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
   echo -e "${BLUE}Datos del usuario creado:${NC}"
   echo "$REGISTER_RESPONSE" | jq '.user' 2>/dev/null
   echo ""
+  echo -e "${BLUE}Email enviado?:${NC} ${EMAIL_SENT}"
+  [ -n "$VERIFICATION_CODE" ] && echo -e "${BLUE}Código de verificación:${NC} $VERIFICATION_CODE" && echo ""
   
   # 2. Ahora prueba hacer login con el usuario registrado
   echo -e "${YELLOW}2. Probando LOGIN con el usuario registrado...${NC}"
@@ -58,7 +67,7 @@ if [ "$USER_ID" != "null" ] && [ -n "$USER_ID" ]; then
   LOGIN_RESPONSE=$(curl -s -k -X POST "$API_BASE/login" \
     -H "Content-Type: application/json" \
     -d "{
-      \"username\": \"$USERNAME\",
+      \"username_or_email\": \"$EMAIL\",
       \"password\": \"$PASSWORD\"
     }")
   
