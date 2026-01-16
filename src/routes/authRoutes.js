@@ -145,7 +145,7 @@ router.post('/login', loginLimiter, async (req, res) => {
         userId: user.id, 
         username: user.username 
       },
-      process.env.JWT_SECRET || 'tu_clave_secreta_jwt_cambiar_en_produccion',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 

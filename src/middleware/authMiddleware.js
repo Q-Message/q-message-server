@@ -26,6 +26,12 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
+  // Validar que JWT_SECRET esté configurado
+  if (!process.env.JWT_SECRET) {
+    console.error('❌ CRÍTICO: JWT_SECRET no está configurado');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
   // Verificar que el token es válido
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
