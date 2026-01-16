@@ -15,8 +15,8 @@ SERVER_URL="${SERVER_URL:-https://194.9.6.94:3000}"
 API_BASE="$SERVER_URL/api/auth"
 
 # Variables por defecto
-USERNAME="${1:-testuser234}"  # Username único con timestamp
-PASSWORD="${2:-Test@1234}"
+USERNAME="${1:-testuser23412314}"  # Username único con timestamp
+PASSWORD="${2:-Test@123412313}"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}        PRUEBA DE REGISTRO${NC}"
