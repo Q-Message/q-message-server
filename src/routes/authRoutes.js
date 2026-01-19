@@ -102,7 +102,7 @@ router.post('/register', registerLimiter, async (req, res) => {
  */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5, // Máximo 5 intentos de login por IP en 15 min
+  max: 500, // Máximo 5 intentos de login por IP en 15 min
   message: { error: 'Demasiados intentos de login, prueba más tarde' }
 });
 
