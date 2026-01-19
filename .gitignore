@@ -67,3 +67,4 @@ out/
 tmp/
 temp/
 *.tmp
+public/.well-known/assetlinks.json
