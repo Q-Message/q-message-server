@@ -2,14 +2,14 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 /**
  * GET /api/contacts/share-link
  * Genera un link temporal para agregar como contacto
  * Requiere: JWT auth
  */
-router.get('/share-link', authMiddleware, async (req, res) => {
+router.get('/share-link', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     
@@ -20,7 +20,7 @@ router.get('/share-link', authMiddleware, async (req, res) => {
       { expiresIn: '24h' }
     );
     
-    const shareLink = `https://q-message.info/invite/${token}`;
+    const shareLink = `https://qmessage.info/invite/${token}`;
     
     return res.json({ 
       success: true,
@@ -41,7 +41,7 @@ router.get('/share-link', authMiddleware, async (req, res) => {
  * Body: { token }
  * Requiere: JWT auth
  */
-router.post('/add-from-link', authMiddleware, async (req, res) => {
+router.post('/add-from-link', authenticateToken, async (req, res) => {
   try {
     const currentUserId = req.user.userId;
     const { token } = req.body;
@@ -107,7 +107,7 @@ router.post('/add-from-link', authMiddleware, async (req, res) => {
  * Lista todos los contactos del usuario autenticado
  * Requiere: JWT auth
  */
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
 
@@ -136,7 +136,7 @@ router.get('/', authMiddleware, async (req, res) => {
  * Elimina un contacto
  * Requiere: JWT auth
  */
-router.delete('/:contactId', authMiddleware, async (req, res) => {
+router.delete('/:contactId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
     const contactId = req.params.contactId;

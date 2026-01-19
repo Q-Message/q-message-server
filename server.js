@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const authRoutes = require('./src/routes/authRoutes');
+const contactRoutes = require('./src/routes/contactsRoutes');
 
 // ============ VALIDACIONES DE SEGURIDAD EN STARTUP ============
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -43,6 +44,7 @@ app.use(express.json());
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
+app.use('/api/contacts', contactRoutes);
 
 // --- CAMBIO PRINCIPAL ---
 // Ya no necesitamos lógica de HTTPS aquí. Nginx hace el "Offloading".
@@ -66,5 +68,5 @@ const HOST = '127.0.0.1'; // Seguridad: Solo acepta peticiones internas de Nginx
 
 server.listen(PORT, HOST, () => {
   console.log(`🚀 Servidor Q-Message encendido internamente en ${HOST}:${PORT}`);
-  console.log(`🌍 Acceso público vía: https://api.tu-dominio.es`);
+  console.log(`🌍 Acceso público vía: https://api.qmessage.net`);
 });

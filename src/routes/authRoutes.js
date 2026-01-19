@@ -82,9 +82,9 @@ router.post('/register', registerLimiter, async (req, res) => {
     const ip = req.ip || req.connection.remoteAddress;
     logger.logAuth('REGISTER_SUCCESS', username, ip);
 
-    return res.status(201).json({ 
-      user: created, 
-      email_sent: emailSent 
+    return res.status(201).json({
+      user: created,
+      email_sent: emailSent
     });
 
   } catch (err) {
@@ -184,7 +184,6 @@ router.post('/verify', async (req, res) => {
       return res.status(400).json({ error: result.message });
     }
 
-    const db = require('../config/db');
     await db.query('UPDATE users SET is_verified = true WHERE id = $1', [userId]);
 
     return res.json({ success: true, message: 'Cuenta verificada correctamente' });
@@ -192,6 +191,5 @@ router.post('/verify', async (req, res) => {
     return res.status(500).json({ error: 'Error en la verificación' });
   }
 });
-
 
 module.exports = router;
