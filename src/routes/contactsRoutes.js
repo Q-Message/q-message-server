@@ -81,11 +81,28 @@ router.post('/add-from-link', authenticateToken, async (req, res) => {
       return res.status(409).json({ error: 'Ya son contactos' });
     }
 
+    // Datos del usuario actual (quien acepta/agrega)
+    const currentUserResult = await db.query(
+      'SELECT id, username, email FROM users WHERE id = $1',
+      [currentUserId]
+    );
+
     // Agregar contacto (bidireccional)
     await db.query(
       'INSERT INTO contacts (user_id, contact_id, created_at) VALUES ($1, $2, NOW()), ($2, $1, NOW())',
       [currentUserId, inviterId]
     );
+
+    // Notificar en tiempo real al invitador (si está conectado)
+    const inviterSocketId = req.connectedUsers ? req.connectedUsers[inviterId] : null;
+    if (inviterSocketId && req.io) {
+      req.io.to(inviterSocketId).emit('contact-added', {
+        userId: currentUserResult.rows[0].id,
+        username: currentUserResult.rows[0].username,
+        email: currentUserResult.rows[0].email,
+        addedAt: new Date().toISOString(),
+      });
+    }
 
     return res.json({ 
       success: true, 
@@ -141,11 +158,27 @@ router.delete('/:contactId', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
     const contactId = req.params.contactId;
 
+    // Datos del usuario que elimina (para informar al otro)
+    const currentUserResult = await db.query(
+      'SELECT id, username FROM users WHERE id = $1',
+      [userId]
+    );
+
     // Eliminar relación bidireccional
     await db.query(
       'DELETE FROM contacts WHERE (user_id = $1 AND contact_id = $2) OR (user_id = $2 AND contact_id = $1)',
       [userId, contactId]
     );
+
+    // Notificar en tiempo real al contacto eliminado (si está conectado)
+    const contactSocketId = req.connectedUsers ? req.connectedUsers[contactId] : null;
+    if (contactSocketId && req.io) {
+      req.io.to(contactSocketId).emit('contact-removed', {
+        userId: currentUserResult.rows[0].id,
+        username: currentUserResult.rows[0].username,
+        removedAt: new Date().toISOString(),
+      });
+    }
 
     return res.json({ 
       success: true,
