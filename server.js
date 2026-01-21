@@ -108,6 +108,18 @@ io.on('connection', (socket) => {
     const { recipientId, content, messageType = 'text', encryptedContent } = data;
     const timestamp = new Date().toISOString();
 
+    // Validar datos mínimos
+    if (!recipientId) {
+      console.error('❌ recipientId vacío o null en send-message');
+      socket.emit('message-error', { error: 'recipientId requerido' });
+      return;
+    }
+    if (!content && !encryptedContent) {
+      console.error('❌ content vacío y sin encryptedContent en send-message');
+      socket.emit('message-error', { error: 'content o encryptedContent requerido' });
+      return;
+    }
+
     // Crear paquete de mensaje
     const messagePacket = {
       senderId: userId,
@@ -137,9 +149,9 @@ io.on('connection', (socket) => {
       // Guardar en pending_messages si está offline
       try {
         await db.query(
-          `INSERT INTO pending_messages (sender_id, receiver_id, encrypted_content, sent_at)
-           VALUES ($1, $2, $3, NOW())`,
-          [userId, recipientId, encryptedContent || content]
+          `INSERT INTO pending_messages (sender_id, recipient_id, encrypted_content, sent_at, content, message_type, initialization_vector)
+           VALUES ($1, $2, $3, NOW(), $4, $5, NULL)`,
+          [userId, recipientId, encryptedContent || content, content, messageType || 'text']
         );
         console.log(`📦 Mensaje guardado en pending: ${username} → ${recipientId}`);
       } catch (err) {
