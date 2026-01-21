@@ -1,11 +1,12 @@
-require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const helmet = require('helmet');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const db = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
 const contactRoutes = require('./src/routes/contactsRoutes');
+const messagesRoutes = require('./src/routes/messages');
 
 // ============ VALIDACIONES DE SEGURIDAD EN STARTUP ============
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -67,6 +68,7 @@ app.use((req, res, next) => {
 // Rutas de la API (después de inyectar io)
 app.use('/api/auth', authRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // Middleware: Autenticar socket con JWT
 io.use((socket, next) => {
@@ -102,7 +104,7 @@ io.on('connection', (socket) => {
    * Cliente envía: { recipientId, content, messageType?, encryptedContent? }
    * Servidor reenvía al destinatario o lo almacena si no está en línea
    */
-  socket.on('send-message', (data) => {
+  socket.on('send-message', async (data) => {
     const { recipientId, content, messageType = 'text', encryptedContent } = data;
     const timestamp = new Date().toISOString();
 
@@ -132,8 +134,18 @@ io.on('connection', (socket) => {
         delivered: true,
       });
     } else {
-      // TODO: Guardar en BD para entrega posterior
-      console.log(`📦 Mensaje pendiente (destinatario offline): ${username} → ${recipientId}`);
+      // Guardar en pending_messages si está offline
+      try {
+        await db.query(
+          `INSERT INTO pending_messages (sender_id, recipient_id, content, encrypted_content, message_type, sent_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [userId, recipientId, content, encryptedContent, messageType]
+        );
+        console.log(`📦 Mensaje guardado en pending: ${username} → ${recipientId}`);
+      } catch (err) {
+        console.error('Error saving pending message:', err);
+      }
+
       socket.emit('message-pending', {
         messageId: messagePacket.timestamp,
         recipientId,

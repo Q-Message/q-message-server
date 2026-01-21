@@ -66,7 +66,7 @@ router.post('/add-from-link', authenticateToken, async (req, res) => {
     }
 
     // Verificar que ambos usuarios existan
-    const inviterResult = await db.query('SELECT id, username FROM users WHERE id = $1', [inviterId]);
+    const inviterResult = await db.query('SELECT id, username, email, public_key_quantum FROM users WHERE id = $1', [inviterId]);
     if (inviterResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
@@ -83,7 +83,7 @@ router.post('/add-from-link', authenticateToken, async (req, res) => {
 
     // Datos del usuario actual (quien acepta/agrega)
     const currentUserResult = await db.query(
-      'SELECT id, username, email FROM users WHERE id = $1',
+      'SELECT id, username, email, public_key_quantum FROM users WHERE id = $1',
       [currentUserId]
     );
 
@@ -100,6 +100,7 @@ router.post('/add-from-link', authenticateToken, async (req, res) => {
         userId: currentUserResult.rows[0].id,
         username: currentUserResult.rows[0].username,
         email: currentUserResult.rows[0].email,
+        public_key_quantum: currentUserResult.rows[0].public_key_quantum,
         addedAt: new Date().toISOString(),
       });
     }
@@ -109,7 +110,9 @@ router.post('/add-from-link', authenticateToken, async (req, res) => {
       message: 'Contacto agregado correctamente',
       contact: {
         id: inviterResult.rows[0].id,
-        username: inviterResult.rows[0].username
+        username: inviterResult.rows[0].username,
+        email: inviterResult.rows[0].email,
+        public_key_quantum: inviterResult.rows[0].public_key_quantum
       }
     });
 
@@ -129,7 +132,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
 
     const result = await db.query(
-      `SELECT u.id, u.username, u.email, c.created_at as added_at
+      `SELECT u.id, u.username, u.email, u.public_key_quantum, c.created_at as added_at
        FROM contacts c
        JOIN users u ON c.contact_id = u.id
        WHERE c.user_id = $1
