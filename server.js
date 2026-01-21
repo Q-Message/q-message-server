@@ -137,9 +137,9 @@ io.on('connection', (socket) => {
       // Guardar en pending_messages si está offline
       try {
         await db.query(
-          `INSERT INTO pending_messages (sender_id, recipient_id, content, encrypted_content, message_type, sent_at)
-           VALUES ($1, $2, $3, $4, $5, NOW())`,
-          [userId, recipientId, content, encryptedContent, messageType]
+          `INSERT INTO pending_messages (sender_id, receiver_id, encrypted_content, sent_at)
+           VALUES ($1, $2, $3, NOW())`,
+          [userId, recipientId, encryptedContent || content]
         );
         console.log(`📦 Mensaje guardado en pending: ${username} → ${recipientId}`);
       } catch (err) {
