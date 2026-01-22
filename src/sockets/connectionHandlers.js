@@ -20,9 +20,10 @@ function setupConnectionHandlers(io, socket, connectedUsers) {
     io.emit('user-status-changed', {
       userId,
       username,
-      status,
+      status: 'online',
       timestamp: new Date().toISOString(),
     });
+    console.log(`✅ Usuario conectado: ${username} (${userId})`);
   });
 
   /**

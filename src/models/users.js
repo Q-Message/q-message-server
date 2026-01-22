@@ -91,6 +91,18 @@ async function verifyPassword(plainPassword, hashedPassword) {
   return bcrypt.compare(plainPassword, hashedPassword);
 }
 
+// Obtener usuario por ID
+async function getUserById(userId) {
+  const sql = `
+    SELECT id, username, email, password_hash, public_key_quantum, is_verified
+    FROM users
+    WHERE id = $1
+  `;
+  const params = [userId];
+  const res = await db.query(sql, params);
+  return res.rows[0];
+}
+
 // 6. Validar código de verificación
 async function validateVerificationCode(userId, code) {
   const sql = `
@@ -121,6 +133,7 @@ module.exports = {
   getUserByUsername,
   getUserByEmail,
   getUserByUsernameOrEmail,
+  getUserById,
   validateEmailFormat,
   verifyPassword,
   generateVerificationCode,
