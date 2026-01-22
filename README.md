@@ -51,7 +51,7 @@ El servidor sigue una arquitectura modular basada en capas:
 
 1. Clonar el repositorio:
 ```bash
-git clone https://github.com/TFGDAM/q-message-server.git
+git clone https://github.com/Q-Message/q-message-server.git
 cd q-message-server
 ```
 
@@ -224,10 +224,13 @@ cd scripts
 
 Este proyecto ha sido desarrollado como Trabajo de Fin de Grado y está disponible bajo licencia MIT.
 
-## Autor
+## Autores
 
+Hugo Palencia y Manuel Arrojo
 Desarrollo realizado como TFG del Ciclo Superior de Desarrollo de Aplicaciones Multiplataforma.
+
+*Proyecto académico desarrollado en Escuela CES - Escuela Superior de Imagen, Sonido y Tecnología*
 
 ## Contacto
 
-Para consultas sobre el proyecto: [tu-email@example.com]
+Para consultas sobre el proyecto: [palenciahugo17@gmail.com]

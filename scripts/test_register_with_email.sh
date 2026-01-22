@@ -2,7 +2,7 @@
 # Script de prueba para registro con email
 # Uso: bash scripts/test_register_with_email.sh
 
-echo "🧪 Probando registro CON EMAIL..."
+echo " Probando registro CON EMAIL..."
 echo ""
 
 # URL del servidor
@@ -60,4 +60,4 @@ echo "Respuesta:"
 echo "$LOGIN_EMAIL_RESPONSE" | jq .
 echo ""
 
-echo "✅ Pruebas completadas"
+echo " Pruebas completadas"

@@ -114,8 +114,9 @@ console.log('✅ Socket.io configurado como orquestador de mensajes en tiempo re
 
 const PORT = process.env.PORT || 3000;
 const HOST = '127.0.0.1'; // Seguridad: Solo acepta peticiones internas de Nginx
+const APP_BASE_URL = process.env.APP_BASE_URL || `http://${HOST}:${PORT}`;
 
 server.listen(PORT, HOST, () => {
   console.log(`🚀 Servidor Q-Message encendido internamente en ${HOST}:${PORT}`);
-  console.log(`🌍 Acceso público vía: https://api.qmessage.net`);
+  console.log(`🌍 Acceso público vía: ${APP_BASE_URL}`);
 });

@@ -58,10 +58,6 @@ if [ "$TOKEN" != "null" ] && [ -n "$TOKEN" ]; then
   echo "   Header: Authorization: Bearer $TOKEN"
   echo ""
   
-  # Aquí puedes agregar una ruta protegida cuando la tengas
-  # curl -s -X GET "$SERVER_URL/api/protected" \
-  #   -H "Authorization: Bearer $TOKEN" | jq '.'
-  
   echo -e "${GREEN}Token listo para usar en solicitudes protegidas${NC}"
   echo ""
   echo -e "${YELLOW}Ejemplo de uso en curl:${NC}"
