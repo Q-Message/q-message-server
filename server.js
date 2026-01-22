@@ -8,6 +8,11 @@ const authRoutes = require('./src/routes/authRoutes');
 const contactRoutes = require('./src/routes/contactsRoutes');
 const messagesRoutes = require('./src/routes/messages');
 
+// Importar módulos de sockets
+const deliverPendingMessages = require('./src/sockets/pendingMessages');
+const setupMessageHandlers = require('./src/sockets/messageHandlers');
+const setupConnectionHandlers = require('./src/sockets/connectionHandlers');
+
 // ============ VALIDACIONES DE SEGURIDAD EN STARTUP ============
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   console.error('❌ ERROR: JWT_SECRET no configurado o muy débil (mín 32 caracteres)');
@@ -88,7 +93,7 @@ io.use((socket, next) => {
 });
 
 // Evento: Usuario conectado
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   const userId = socket.userId;
   const username = socket.username;
 
@@ -97,156 +102,14 @@ io.on('connection', (socket) => {
   console.log(`✅ Usuario conectado: ${username} (${userId}) - Socket: ${socket.id}`);
   console.log(`📊 Usuarios conectados: ${Object.keys(connectedUsers).length}`);
 
-  // ========== EVENTOS DE MENSAJERÍA ==========
+  // Entregar mensajes pendientes
+  await deliverPendingMessages(io, socket, connectedUsers);
 
-  /**
-   * EVENTO: send-message
-   * Cliente envía: { recipientId, content, messageType?, encryptedContent? }
-   * Servidor reenvía al destinatario o lo almacena si no está en línea
-   */
-  socket.on('send-message', async (data) => {
-    const { recipientId, content, messageType = 'text', encryptedContent } = data;
-    const timestamp = new Date().toISOString();
+  // Configurar handlers de mensajería
+  setupMessageHandlers(io, socket, connectedUsers);
 
-    // Validar datos mínimos
-    if (!recipientId) {
-      console.error('❌ recipientId vacío o null en send-message');
-      socket.emit('message-error', { error: 'recipientId requerido' });
-      return;
-    }
-    if (!content && !encryptedContent) {
-      console.error('❌ content vacío y sin encryptedContent en send-message');
-      socket.emit('message-error', { error: 'content o encryptedContent requerido' });
-      return;
-    }
-
-    // Crear paquete de mensaje
-    const messagePacket = {
-      senderId: userId,
-      senderUsername: username,
-      recipientId,
-      content,
-      messageType,
-      encryptedContent,
-      timestamp,
-      delivered: false,
-    };
-
-    // Si el destinatario está conectado, enviarle el mensaje
-    if (connectedUsers[recipientId]) {
-      const recipientSocketId = connectedUsers[recipientId];
-      io.to(recipientSocketId).emit('receive-message', messagePacket);
-      messagePacket.delivered = true;
-      console.log(`📨 Mensaje entregado: ${username} → ${recipientId}`);
-
-      // Confirmar entrega al remitente
-      socket.emit('message-delivered', {
-        messageId: messagePacket.timestamp,
-        recipientId,
-        delivered: true,
-      });
-    } else {
-      // Guardar en pending_messages si está offline
-      try {
-        await db.query(
-          `INSERT INTO pending_messages (sender_id, recipient_id, encrypted_content, sent_at, content, message_type, initialization_vector)
-           VALUES ($1, $2, $3, NOW(), $4, $5, NULL)`,
-          [userId, recipientId, encryptedContent || content, content, messageType || 'text']
-        );
-        console.log(`📦 Mensaje guardado en pending: ${username} → ${recipientId}`);
-      } catch (err) {
-        console.error('Error saving pending message:', err);
-      }
-
-      socket.emit('message-pending', {
-        messageId: messagePacket.timestamp,
-        recipientId,
-        delivered: false,
-      });
-    }
-  });
-
-  /**
-   * EVENTO: typing-indicator
-   * Cliente notifica que está escribiendo
-   */
-  socket.on('typing-indicator', (data) => {
-    const { recipientId, isTyping } = data;
-
-    if (connectedUsers[recipientId]) {
-      const recipientSocketId = connectedUsers[recipientId];
-      io.to(recipientSocketId).emit('user-typing', {
-        senderId: userId,
-        senderUsername: username,
-        isTyping,
-      });
-    }
-  });
-
-  /**
-   * EVENTO: message-read
-   * Cliente confirma que leyó un mensaje
-   */
-  socket.on('message-read', (data) => {
-    const { senderId, messageId } = data;
-
-    if (connectedUsers[senderId]) {
-      const senderSocketId = connectedUsers[senderId];
-      io.to(senderSocketId).emit('message-read-receipt', {
-        readBy: username,
-        messageId,
-        readAt: new Date().toISOString(),
-      });
-    }
-  });
-
-  /**
-   * EVENTO: online-status
-   * Broadcast del estado de conectividad del usuario
-   */
-  socket.on('set-status', (data) => {
-    const { status } = data; // 'online', 'away', 'offline'
-    socket.status = status;
-
-    // Notificar a todos los contactos
-    io.emit('user-status-changed', {
-      userId,
-      username,
-      status,
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  /**
-   * EVENTO: get-online-users
-   * Cliente solicita lista de usuarios conectados
-   */
-  socket.on('get-online-users', () => {
-    const onlineUsers = Object.entries(connectedUsers).map(([uId, sId]) => ({
-      userId: uId,
-      socketId: sId,
-    }));
-    socket.emit('online-users-list', onlineUsers);
-  });
-
-  // ========== MANEJO DE DESCONEXIONES ==========
-
-  socket.on('disconnect', () => {
-    delete connectedUsers[userId];
-    console.log(`❌ Usuario desconectado: ${username} (${userId})`);
-    console.log(`📊 Usuarios conectados: ${Object.keys(connectedUsers).length}`);
-
-    // Notificar a otros usuarios que este se desconectó
-    io.emit('user-went-offline', {
-      userId,
-      username,
-      timestamp: new Date().toISOString(),
-    });
-  });
-
-  socket.on('error', (error) => {
-    console.error(`⚠️ Error en socket ${socket.id}:`, error);
-  });
+  // Configurar handlers de conexión/desconexión
+  setupConnectionHandlers(io, socket, connectedUsers);
 });
 
 console.log('✅ Socket.io configurado como orquestador de mensajes en tiempo real');
