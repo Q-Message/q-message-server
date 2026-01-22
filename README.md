@@ -139,8 +139,8 @@ El servidor implementa múltiples capas de seguridad:
 - **Autenticación JWT**: Tokens con expiración de 7 días
 - **Hashing de contraseñas**: Bcrypt con 10 rounds de salt
 - **Rate Limiting**: 
-  - Registro: 10 intentos por IP cada 15 minutos
-  - Login: 500 intentos por IP cada 15 minutos
+  - Registro: 5 intentos por IP cada 15 minutos
+  - Login: 3 intentos por IP cada 15 minutos
 - **Headers HTTP seguros**: Helmet.js configurado
 - **Protección SQL Injection**: Prepared statements en todas las consultas
 - **Validación de contraseñas**: Mínimo 8 caracteres, mayúsculas, números y caracteres especiales
