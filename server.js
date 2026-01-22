@@ -13,20 +13,19 @@ const deliverPendingMessages = require('./src/sockets/pendingMessages');
 const setupMessageHandlers = require('./src/sockets/messageHandlers');
 const setupConnectionHandlers = require('./src/sockets/connectionHandlers');
 
-// ============ VALIDACIONES DE SEGURIDAD EN STARTUP ============
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-  console.error('❌ ERROR: JWT_SECRET no configurado o muy débil (mín 32 caracteres)');
+  console.error('ERROR: JWT_SECRET no configurado o muy débil (mín 32 caracteres)');
   process.exit(1);
 }
 if (!process.env.CORS_ORIGIN) {
-  console.error('❌ ERROR: CORS_ORIGIN no configurado en .env');
+  console.error('ERROR: CORS_ORIGIN no configurado en .env');
   process.exit(1);
 }
 console.log('✅ Configuración de seguridad validada');
 
 const app = express();
 
-// ============ SEGURIDAD: Headers HTTP con Helmet ============
+//Header de seguridad HTTP con Helmet.js
 app.use(helmet({
   contentSecurityPolicy: false, // Desabilitar CSP si causa problemas con Socket.io
   crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -52,7 +51,6 @@ app.use(express.json());
 const server = http.createServer(app);
 console.log('✅ Servidor funcionando en modo HTTP (detrás de Proxy Nginx)');
 
-// ============ SOCKET.IO ============
 const io = new Server(server, {
   cors: {
     origin: CORS_ORIGIN,

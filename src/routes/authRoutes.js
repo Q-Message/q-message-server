@@ -38,25 +38,20 @@ const loginLimiter = rateLimit({
   message: { error: 'Demasiados intentos de login, prueba más tarde' }
 });
 
-// =========================================================================
-//  RUTAS CLÁSICAS (Login, Verify, Register Normal) - SIN CIFRADO OPCIONAL
-// =========================================================================
 
-/**
- * RUTA: POST /api/auth/register
- */
+// RUTA: POST /api/auth/register
 router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { username, email, password, public_key_quantum } = req.body;
 
-    // 1. Validaciones
+    // Validaciones
     if (!username || !email || !password) return res.status(400).json({ error: 'Campos obligatorios' });
     if (!usersModel.validateEmailFormat(email)) return res.status(400).json({ error: 'Email inválido' });
     
     const passVal = validatePasswordStrength(password);
     if (!passVal.valid) return res.status(400).json({ error: passVal.message });
 
-    // 2. Preparar datos DB
+    // Preparar datos DB
     const id = uuidv4();
     const passwordHash = await usersModel.hashPassword(password);
     const verificationCode = usersModel.generateVerificationCode();
@@ -66,7 +61,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       public_key_quantum: public_key_quantum || null, verificationCode
     });
 
-    // 3. Enviar Email
+    // Enviar Email
     let emailSent = false;
     try {
       const sendResult = await emailService.sendVerificationCode(email, username, verificationCode);
@@ -75,7 +70,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       console.error('Error enviando email:', e.message);
     }
 
-    // 4. Respuesta
+    // Respuesta
     const ip = req.ip || req.connection.remoteAddress;
     logger.logAuth('REGISTER_SUCCESS', username, ip);
 
@@ -95,9 +90,7 @@ router.post('/register', registerLimiter, async (req, res) => {
   }
 });
 
-/**
- * RUTA: POST /api/auth/login
- */
+// RUTA: POST /api/auth/login
 router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -146,9 +139,8 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 });
 
-/**
- * RUTA: POST /api/auth/verify
- */
+
+//  RUTA: POST /api/auth/verify
 router.post('/verify', async (req, res) => {
   try {
     const { userId, code } = req.body;
@@ -179,9 +171,7 @@ router.post('/verify', async (req, res) => {
   }
 });
 
-/**
- * RUTA: POST /api/auth/resend
- */
+//  RUTA: POST /api/auth/resend
 router.post('/resend', async (req, res) => {
   try {
     const { userId } = req.body;

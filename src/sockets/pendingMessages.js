@@ -60,7 +60,7 @@ async function deliverPendingMessages(io, socket, connectedUsers) {
       console.log(`✅ Mensajes pendientes eliminados para ${username}`);
     }
   } catch (err) {
-    console.error('❌ Error al recuperar mensajes pendientes:', err);
+    console.error('Error al recuperar mensajes pendientes:', err);
     socket.emit('pending-messages-error', {
       error: 'No se pudieron recuperar mensajes pendientes'
     });

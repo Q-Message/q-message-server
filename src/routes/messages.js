@@ -3,12 +3,8 @@ const router = express.Router();
 const db = require('../config/db');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
-/**
- * GET /api/messages/:contactId
- * Recupera el historial de mensajes pendientes con un contacto
- * Solo muestra mensajes que llegaron offline (en pending_messages)
- * Requiere: JWT auth
- */
+// GET /api/messages/:contactId
+// Recupera el historial de mensajes pendientes con un contacto
 router.get('/:contactId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -49,12 +45,8 @@ router.get('/:contactId', authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * GET /api/messages/pending
- * Recupera todos los mensajes pendientes para el usuario autenticado
- * (Mensajes que llegaron mientras estaba offline)
- * Requiere: JWT auth
- */
+// GET /api/messages/pending
+// Recupera todos los mensajes pendientes para el usuario autenticado
 router.get('/pending', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;

@@ -4,11 +4,8 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
-/**
- * GET /api/contacts/share-link
- * Genera un link temporal para agregar como contacto
- * Requiere: JWT auth
- */
+// GET /api/contacts/share-link
+// Genera un link temporal para agregar como contacto
 router.get('/share-link', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -35,12 +32,8 @@ router.get('/share-link', authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * POST /api/contacts/add-from-link
- * Agrega contacto usando el token del link compartido
- * Body: { token }
- * Requiere: JWT auth
- */
+// POST /api/contacts/add-from-link
+// Agrega contacto usando el token del link compartido
 router.post('/add-from-link', authenticateToken, async (req, res) => {
   try {
     const currentUserId = req.user.userId;
@@ -122,11 +115,8 @@ router.post('/add-from-link', authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * GET /api/contacts
- * Lista todos los contactos del usuario autenticado
- * Requiere: JWT auth
- */
+// GET /api/contacts
+// Lista todos los contactos del usuario autenticado
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -151,11 +141,8 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/contacts/:contactId
- * Elimina un contacto
- * Requiere: JWT auth
- */
+// GET /api/contacts/:contactId
+// Elimina un contacto
 router.delete('/:contactId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.userId;

@@ -21,12 +21,12 @@ function setupMessageHandlers(io, socket, connectedUsers) {
 
     // Validar datos mínimos
     if (!recipientId) {
-      console.error('❌ recipientId vacío o null en send-message');
+      console.error('recipientId vacío o null en send-message');
       socket.emit('message-error', { error: 'recipientId requerido' });
       return;
     }
     if (!content && !encryptedContent) {
-      console.error('❌ content vacío y sin encryptedContent en send-message');
+      console.error('content vacío y sin encryptedContent en send-message');
       socket.emit('message-error', { error: 'content o encryptedContent requerido' });
       return;
     }
