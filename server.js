@@ -21,7 +21,7 @@ if (!process.env.CORS_ORIGIN) {
   console.error('ERROR: CORS_ORIGIN no configurado en .env');
   process.exit(1);
 }
-console.log(' Configuración de seguridad validada');
+console.log('Configuración de seguridad validada');
 
 const app = express();
 
@@ -30,7 +30,7 @@ app.use(helmet({
   contentSecurityPolicy: false, // Desabilitar CSP si causa problemas con Socket.io
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
-console.log(' Helmet.js activado (headers de seguridad HTTP)');
+console.log('Helmet.js activado (headers de seguridad HTTP)');
 
 // Configuración de CORS
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
@@ -49,7 +49,7 @@ app.use(express.json());
 
 // Nginx hace el "Offloading".
 const server = http.createServer(app);
-console.log(' Servidor funcionando en modo HTTP (detrás de Proxy Nginx)');
+console.log('Servidor funcionando en modo HTTP (detrás de Proxy Nginx)');
 
 const io = new Server(server, {
   cors: {
@@ -117,6 +117,6 @@ const HOST = '127.0.0.1'; // Seguridad: Solo acepta peticiones internas de Nginx
 const APP_BASE_URL = process.env.APP_BASE_URL || `http://${HOST}:${PORT}`;
 
 server.listen(PORT, HOST, () => {
-  console.log(` Servidor Q-Message encendido internamente en ${HOST}:${PORT}`);
-  console.log(` Acceso público vía: ${APP_BASE_URL}`);
+  console.log(`Servidor Q-Message encendido internamente en ${HOST}:${PORT}`);
+  console.log(`Acceso público vía: ${APP_BASE_URL}`);
 });
