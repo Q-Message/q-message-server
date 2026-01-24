@@ -34,23 +34,27 @@ interface PasswordValidation {
 
 // Valida la fortaleza de la contraseña
 function validatePasswordStrength(password: string): PasswordValidation {
-	const minLength = 8;
-	const hasUpperCase = /[A-Z]/.test(password);
-	const hasNumber = /\d/.test(password);
-	const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
-	if (password.length < minLength) {
-		return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
-	}
-	if (!hasUpperCase) {
-		return { valid: false, message: 'Debe contener al menos una mayúscula' };
-	}
-	if (!hasNumber) {
-		return { valid: false, message: 'Debe contener al menos un número' };
-	}
-	if (!hasSpecialChar) {
-		return { valid: false, message: 'Debe contener un carácter especial (!@#$%^&*)' };
-	}
-	return { valid: true };
+		const minLength = 8;
+		const maxLength = 64;
+		const hasUpperCase = /[A-Z]/.test(password);
+		const hasNumber = /\d/.test(password);
+		const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+		if (password.length < minLength) {
+			return { valid: false, message: 'La contraseña debe tener al menos 8 caracteres' };
+		}
+		if (password.length > maxLength) {
+			return { valid: false, message: `La contraseña no debe superar los ${maxLength} caracteres` };
+		}
+		if (!hasUpperCase) {
+			return { valid: false, message: 'Debe contener al menos una mayúscula' };
+		}
+		if (!hasNumber) {
+			return { valid: false, message: 'Debe contener al menos un número' };
+		}
+		if (!hasSpecialChar) {
+			return { valid: false, message: 'Debe contener un carácter especial (!@#$%^&*)' };
+		}
+		return { valid: true };
 }
 
 // Controladores de autenticación
@@ -58,26 +62,26 @@ export async function register(req: Request<{}, {}, RegisterBody>, res: Response
 	try {
 		const { username, email, password, public_key_quantum } = req.body;
 		if (!username || !email || !password) {
-			return res.status(400).json({ error: 'Campos obligatorios' });
-		}
-		if (!usersModel.validateEmailFormat(email)) {
-			return res.status(400).json({ error: 'Email inválido' });
-		}
-		const passVal = validatePasswordStrength(password);
-		if (!passVal.valid) {
-			return res.status(400).json({ error: passVal.message });
-		}
-		const id = uuidv4();
-		const passwordHash = await usersModel.hashPassword(password);
-		const verificationCode = usersModel.generateVerificationCode();
-		const created = await usersModel.createUser({
-			id,
-			username,
-			email,
-			passwordHash,
-			public_key_quantum: public_key_quantum || undefined,
-			verificationCode
-		});
+			    return res.status(400).json({ error: 'Campos obligatorios' });
+			}
+			if (!usersModel.validateEmailFormat(email)) {
+			    return res.status(400).json({ error: 'Email inválido' });
+			}
+			const passVal = validatePasswordStrength(password);
+			if (!passVal.valid) {
+			    return res.status(400).json({ error: passVal.message });
+			}
+			const id = uuidv4();
+			const passwordHash = await usersModel.hashPassword(password);
+			const verificationCode = usersModel.generateVerificationCode();
+			const created = await usersModel.createUser({
+			    id,
+			    username,
+			    email,
+			    passwordHash,
+			    public_key_quantum: public_key_quantum || undefined,
+			    verificationCode
+			});
 		let emailSent = false;
 		try {
 			const sendResult = await emailService.sendVerificationCode(email, username, verificationCode);
@@ -91,8 +95,8 @@ export async function register(req: Request<{}, {}, RegisterBody>, res: Response
 		return res.status(201).json({
 			success: true,
 			message: 'Registro completado',
-			user: { id: created.id },
-			email_sent: emailSent
+			       user: { id: created.id },
+			       email_sent: emailSent
 		});
 	} catch (err) {
 		const error = err as Error;

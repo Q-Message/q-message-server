@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from 'pg'; // 1. Usamos import en vez de require
+import { Pool, QueryResult } from 'pg'; // Usamos import en vez de require
 import dotenv from 'dotenv';
 
 // Cargar variables de entorno
