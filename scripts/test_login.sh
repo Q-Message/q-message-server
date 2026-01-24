@@ -15,8 +15,8 @@ SERVER_URL="${SERVER_URL:-https://194.9.6.94:3000}"
 API_BASE="$SERVER_URL/api/auth"
 
 # Variables por defecto
-USERNAME="${1:-manuelarrojo}"
-PASSWORD="${2:-Manuelmarica123/}"
+USERNAME="${1:-Hugo}"
+PASSWORD="${2:-Password123!}"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}        PRUEBA DE LOGIN${NC}"

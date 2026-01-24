@@ -35,7 +35,7 @@ El servidor sigue una arquitectura modular basada en capas:
 ### Flujo de Comunicación
 
 1. **Autenticación**: El cliente se registra/inicia sesión mediante API REST y recibe un JWT.
-2. **Conexión WebSocket**: El cliente se conecta al servidor Socket.io usando el JWT como credencial.
+2. **Conexión WebSocket**: El cliente se conecta al servidor Socket.io y, tras conectar, debe emitir el evento `register` enviando el JWT recibido al hacer login. Solo después de este paso el servidor activará los handlers de mensajería y notificaciones para ese socket.
 3. **Mensajería en Tiempo Real**: Los mensajes se enrutan a través del servidor hacia el destinatario si está conectado.
 4. **Persistencia**: Si el destinatario está offline, los mensajes se almacenan en la base de datos para entrega posterior.
 
@@ -112,9 +112,21 @@ El servidor estará disponible en `http://localhost:3000`.
 - `GET /api/messages/pending` - Recuperar mensajes pendientes
 - `GET /api/messages/:contactId` - Historial con un contacto
 
+
 ### Eventos Socket.io
 
+**Flujo de autenticación tras la migración:**
+
+1. El cliente debe emitir el evento `register` con el JWT tras conectar el socket:
+     ```js
+     socket.on('connect', () => {
+         socket.emit('register', token); // token = JWT recibido al hacer login
+     });
+     ```
+2. Solo después de este paso el servidor activará los eventos de mensajería y notificaciones para ese socket.
+
 **Cliente → Servidor:**
+- `register` - (Obligatorio tras conectar) Autentica el socket con el JWT
 - `send-message` - Enviar mensaje a un contacto
 - `typing-indicator` - Notificar que se está escribiendo
 - `message-read` - Confirmar lectura de mensaje

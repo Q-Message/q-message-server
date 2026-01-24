@@ -1,33 +1,30 @@
-const db = require('../../src/config/db');
-const bcrypt = require('bcrypt');
+import { query } from '../config/db';
+import * as bcrypt from 'bcrypt';
 
-// Generar código de verificación de 6 dígitos random
-function generateVerificationCode() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+// Función para actualizar el código de verificación y su expiración
+export async function updateVerificationCode(userId: string, newCode: string): Promise<void> {
+  const sql = 'UPDATE users SET verification_code = $1, code_expires_at = NOW() + interval \'5 minutes\' WHERE id = $2';
+  await query(sql, [newCode, userId]);
 }
 
-// 1. Crear usuario con email y código de verificación
-async function createUser({ id, username, email, passwordHash, public_key_quantum, verificationCode }) {
-  const codeExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // +5 minutos
-  
+// Funciones relacionadas con usuarios
+export function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+export async function createUser({ id, username, email, passwordHash, public_key_quantum, verificationCode }:{ id: string, username: string, email: string, passwordHash: string, public_key_quantum?: string, verificationCode: string }): Promise<any> {
+  const codeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
   const sql = `
     INSERT INTO users (id, username, email, password_hash, public_key_quantum, verification_code, code_expires_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING id, username, email, public_key_quantum, verification_code, code_expires_at, created_at
   `;
-  
-  // Manejo de la clave cuántica (permitimos null si no viene)
   const publicKeyParam = public_key_quantum == null ? '' : public_key_quantum;
-  
   const params = [id, username, email, passwordHash, publicKeyParam, verificationCode, codeExpiresAt];
-  
   try {
-    const res = await db.query(sql, params);
+    const res = await query(sql, params);
     return res.rows[0];
-  } catch (error) {
-    // Error de duplicado (unique constraint)
+  } catch (error: any) {
     if (error.code === '23505') {
-      // Determinar si es username o email duplicado
       if (error.detail && error.detail.includes('username')) {
         throw new Error('Username already exists');
       } else if (error.detail && error.detail.includes('email')) {
@@ -35,107 +32,92 @@ async function createUser({ id, username, email, passwordHash, public_key_quantu
       }
       throw new Error('User data already exists');
     }
+
     throw error;
   }
 }
 
-// 2. Buscar usuario por username
-async function getUserByUsername(username) {
+// Obtener usuario por nombre de usuario
+export async function getUserByUsername(username: string): Promise<any> {
   const sql = `
     SELECT id, username, email, password_hash, public_key_quantum, is_verified
     FROM users
     WHERE username = $1
   `;
   const params = [username];
-  const res = await db.query(sql, params);
+  const res = await query(sql, params);
   return res.rows[0];
 }
 
-// 3. Buscar usuario por email
-async function getUserByEmail(email) {
+// Obtener usuario por email
+export async function getUserByEmail(email: string): Promise<any> {
   const sql = `
     SELECT id, username, email, password_hash, public_key_quantum
     FROM users
     WHERE email = $1
   `;
   const params = [email];
-  const res = await db.query(sql, params);
+  const res = await query(sql, params);
   return res.rows[0];
 }
 
-// 4. Buscar usuario por username O email (para login flexible)
-async function getUserByUsernameOrEmail(identifier) {
+
+// Obtener usuario por nombre de usuario o email
+export async function getUserByUsernameOrEmail(identifier: string): Promise<any> {
   const sql = `
     SELECT id, username, email, password_hash, public_key_quantum
     FROM users
     WHERE username = $1 OR email = $1
   `;
   const params = [identifier];
-  const res = await db.query(sql, params);
+  const res = await query(sql, params);
   return res.rows[0];
 }
 
-// 5. Validar formato de email
-function validateEmailFormat(email) {
+
+// Validar formato de email
+export function validateEmailFormat(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
 
-// Funciones de hash y verificación
-async function hashPassword(plainPassword) {
+// Hashing y verificación de contraseñas
+export async function hashPassword(plainPassword: string): Promise<string> {
   const saltRounds = 10;
   return bcrypt.hash(plainPassword, saltRounds);
 }
-
-async function verifyPassword(plainPassword, hashedPassword) {
+export async function verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
   return bcrypt.compare(plainPassword, hashedPassword);
 }
 
 // Obtener usuario por ID
-async function getUserById(userId) {
+export async function getUserById(userId: string): Promise<any> {
   const sql = `
     SELECT id, username, email, password_hash, public_key_quantum, is_verified
     FROM users
     WHERE id = $1
   `;
   const params = [userId];
-  const res = await db.query(sql, params);
+  const res = await query(sql, params);
   return res.rows[0];
 }
 
-// 6. Validar código de verificación
-async function validateVerificationCode(userId, code) {
+// Validar código de verificación
+export async function validateVerificationCode(userId: string, code: string): Promise<any> {
   const sql = `
     SELECT id, username, email, verification_code, code_expires_at
     FROM users
     WHERE id = $1 AND verification_code = $2
   `;
   const params = [userId, code];
-  const res = await db.query(sql, params);
-  
+  const res = await query(sql, params);
   if (res.rows.length === 0) {
     return { valid: false, message: 'Invalid verification code' };
   }
-  
   const user = res.rows[0];
   const now = new Date();
-  
   if (now > user.code_expires_at) {
     return { valid: false, message: 'Verification code has expired' };
   }
-  
   return { valid: true, user };
 }
-
-module.exports = {
-  createUser,
-  hashPassword,
-  getUserByUsername,
-  getUserByEmail,
-  getUserByUsernameOrEmail,
-  getUserById,
-  validateEmailFormat,
-  verifyPassword,
-  generateVerificationCode,
-  validateVerificationCode,
-};

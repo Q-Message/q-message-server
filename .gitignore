@@ -1,21 +1,22 @@
+
 # ============================================
 # Dependencias
 # ============================================
 node_modules/
-npm-debug.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-package-lock.json
+
 
 # ============================================
 # Variables de Entorno (CONFIDENCIAL)
 # ============================================
-.env
-.env.local
-.env.*.local
-.env.production
+.env*
+
 
 # ============================================
 # Certificados y Claves (CONFIDENCIAL)
@@ -24,24 +25,34 @@ certs/
 *.key
 *.crt
 *.pem
+*.pfx
+
 
 # ============================================
 # Logs
 # ============================================
 logs/
 *.log
+*.out
+*.err
+
 
 # ============================================
 # OS
 # ============================================
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Icon?
+
+# ============================================
 
 # ============================================
 # IDE / Editor
 # ============================================
 .vscode/
 .idea/
+.history/
 *.swp
 *.swo
 *~
@@ -52,6 +63,7 @@ Thumbs.db
 .settings/
 *.sublime-workspace
 
+
 # ============================================
 # Build & Dist
 # ============================================
@@ -60,11 +72,22 @@ build/
 coverage/
 .next/
 out/
+*.tsbuildinfo
+
 
 # ============================================
-# Temporal
+# Temporal y archivos de migración
 # ============================================
 tmp/
 temp/
 *.tmp
+*.bak
+*.old
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+*.dump
+*.sql
 public/.well-known/assetlinks.json
