@@ -28,16 +28,9 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
-/**
- * 2. EXPORTACIÓN CON NOMBRE (Named Export)
- * Usamos 'export const' para que puedas hacer 'import { query }' en otros archivos.
- * Además, le ponemos tipos a los parámetros.
- */
+
 export const query = (text: string, params?: any[]): Promise<QueryResult> => {
   return pool.query(text, params);
 };
 
-/**
- * Opcional: Si alguna vez necesitas acceder al pool directamente
- */
 export { pool };
