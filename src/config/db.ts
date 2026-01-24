@@ -6,7 +6,7 @@ dotenv.config();
 
 // Validación rápida
 if (!process.env.DB_HOST || !process.env.DB_USER) {
-  console.error('❌ ERROR CRÍTICO: Variables de entorno de base de datos incompletas.');
+  console.error('ERROR CRÍTICO: Variables de entorno de base de datos incompletas.');
   process.exit(1);
 }
 
