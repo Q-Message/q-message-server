@@ -20,6 +20,7 @@ interface PendingMessageRow {
   message_type: string;
   sent_at: Date; // Postgres devuelve Date, no string
   initialization_vector: string;
+  encapsulated_key: string;
 }
 
 /**
@@ -38,8 +39,9 @@ export default async function deliverPendingMessages(
 
   try {
     const pendingResult = await query(
-      `SELECT pm.id, pm.sender_id, u.username as sender_username, pm.content, 
-              pm.encrypted_content, pm.message_type, pm.sent_at, pm.initialization_vector
+      `SELECT pm.id, pm.sender_id, u.username as sender_username, pm.content,
+              pm.encrypted_content, pm.message_type, pm.sent_at, pm.initialization_vector,
+              pm.encapsulated_key
        FROM pending_messages pm
        JOIN users u ON pm.sender_id = u.id
        WHERE pm.recipient_id = $1
@@ -66,6 +68,7 @@ export default async function deliverPendingMessages(
           // Convertimos el Date de Postgres a String ISO para el JSON
           timestamp: new Date(msg.sent_at).toISOString(),
           iv: msg.initialization_vector,
+          encapsulatedKey: msg.encapsulated_key,
           delivered: true,
           isPending: true, // Marca visual para el frontend (ej: icono diferente)
         };
