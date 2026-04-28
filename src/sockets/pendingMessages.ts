@@ -38,26 +38,27 @@ export default async function deliverPendingMessages(
   if (!userId) return;
 
   try {
+    // CTE atómico: borra y devuelve los mensajes en una sola operación,
+    // eliminando la race condition entre el socket y el endpoint REST.
     const pendingResult = await query(
-      `SELECT pm.id, pm.sender_id, u.username as sender_username, pm.content,
-              pm.encrypted_content, pm.message_type, pm.sent_at, pm.initialization_vector,
-              pm.encapsulated_key
-       FROM pending_messages pm
-       JOIN users u ON pm.sender_id = u.id
-       WHERE pm.recipient_id = $1
-       ORDER BY pm.sent_at ASC`,
+      `WITH deleted AS (
+         DELETE FROM pending_messages WHERE recipient_id = $1 RETURNING *
+       )
+       SELECT d.id, d.sender_id, u.username AS sender_username, d.content,
+              d.encrypted_content, d.message_type, d.sent_at, d.initialization_vector,
+              d.encapsulated_key
+       FROM deleted d
+       JOIN users u ON d.sender_id = u.id
+       ORDER BY d.sent_at ASC`,
       [userId]
     );
 
-    // Casteamos el resultado a nuestra interfaz
     const rows = pendingResult.rows as PendingMessageRow[];
 
     if (rows.length > 0) {
       console.log(`Enviando ${rows.length} mensajes pendientes a ${username}`);
 
       for (const msg of rows) {
-        
-        // Construimos el paquete siguiendo la interfaz MessagePacket
         const messagePacket: MessagePacket = {
           senderId: msg.sender_id,
           senderUsername: msg.sender_username,
@@ -65,32 +66,26 @@ export default async function deliverPendingMessages(
           content: msg.content,
           messageType: msg.message_type || 'text',
           encryptedContent: msg.encrypted_content,
-          // Convertimos el Date de Postgres a String ISO para el JSON
           timestamp: new Date(msg.sent_at).toISOString(),
           iv: msg.initialization_vector,
           encapsulatedKey: msg.encapsulated_key,
           delivered: true,
-          isPending: true, // Marca visual para el frontend (ej: icono diferente)
+          isPending: true,
         };
 
-        // Emitir al usuario que se acaba de conectar
         socket.emit('receive-message', messagePacket);
 
         const senderSocketId = connectedUsers[msg.sender_id];
         if (senderSocketId) {
           io.to(senderSocketId).emit('message-delivered', {
-            messageId: messagePacket.timestamp, // Usamos la fecha original como ID
+            messageId: messagePacket.timestamp,
             recipientId: userId,
             delivered: true,
           });
         }
       }
 
-      await query(
-        'DELETE FROM pending_messages WHERE recipient_id = $1',
-        [userId]
-      );
-      console.log(`Mensajes pendientes eliminados de DB para ${username}`);
+      console.log(`${rows.length} mensajes pendientes entregados a ${username}`);
     }
   } catch (err) {
     console.error('Error al recuperar mensajes pendientes:', err);

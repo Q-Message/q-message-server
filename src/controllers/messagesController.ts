@@ -8,26 +8,23 @@ export async function getPendingMessages(req: Request, res: Response) {
 			res.status(401).json({ error: 'Usuario no identificado' });
 			return;
 		}
+		// CTE atómico: borra y devuelve en una sola operación (evita race condition con el socket)
 		const result = await query(
-			`SELECT 
-				 id, sender_id as "senderId", recipient_id as "recipientId",
-				 content, encrypted_content as "encryptedContent",
-				 message_type as "messageType",
-				 sent_at as "timestamp",
-				 initialization_vector as "iv",
-				 encapsulated_key as "encapsulatedKey"
-			 FROM pending_messages
-			 WHERE recipient_id = $1
+			`WITH deleted AS (
+			   DELETE FROM pending_messages WHERE recipient_id = $1 RETURNING *
+			 )
+			 SELECT
+			   id, sender_id AS "senderId", recipient_id AS "recipientId",
+			   content, encrypted_content AS "encryptedContent",
+			   message_type AS "messageType",
+			   sent_at AS "timestamp",
+			   initialization_vector AS "iv",
+			   encapsulated_key AS "encapsulatedKey"
+			 FROM deleted
 			 ORDER BY sent_at ASC`,
 			[userId]
 		);
 		const messages = result.rows;
-		if (result.rows.length > 0) {
-			await query(
-				'DELETE FROM pending_messages WHERE recipient_id = $1',
-				[userId]
-			);
-		}
 		res.json({
 			success: true,
 			messages: messages,
