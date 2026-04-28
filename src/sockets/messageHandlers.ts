@@ -26,7 +26,7 @@ export default function setupMessageHandlers(
    */
   socket.on('send-message', async (data) => {
     // TypeScript sabe que 'data' es de tipo MessagePayload
-    const { recipientId, content, messageType = 'text', encryptedContent, iv } = data;
+    const { recipientId, content, messageType = 'text', encryptedContent, iv, encapsulatedKey } = data;
     const timestamp = new Date().toISOString();
 
     if (!recipientId) {
@@ -51,6 +51,7 @@ export default function setupMessageHandlers(
       iv,              
       timestamp,
       delivered: false,
+      encapsulatedKey,
     };
 
     const recipientSocketId = connectedUsers[recipientId];
@@ -72,15 +73,16 @@ export default function setupMessageHandlers(
       try {
         await query(
           `INSERT INTO pending_messages 
-           (sender_id, recipient_id, encrypted_content, sent_at, content, message_type, initialization_vector)
-           VALUES ($1, $2, $3, NOW(), $4, $5, $6)`,
+           (sender_id, recipient_id, encrypted_content, sent_at, content, message_type, initialization_vector, encapsulated_key)
+           VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7)`,
           [
             userId, 
             recipientId, 
             encryptedContent || content, // Fallback si no hay cifrado
             content, 
             messageType,
-            iv || null // Guardamos el IV si existe
+            iv || null, // Guardamos el IV si existe
+            encapsulatedKey || null
           ]
         );
         console.log(`Mensaje guardado en buzón (Offline): ${username} -> ${recipientId}`);

@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 
 // Función para actualizar el código de verificación y su expiración
 export async function updateVerificationCode(userId: string, newCode: string): Promise<void> {
-  const sql = 'UPDATE users SET verification_code = $1, code_expires_at = NOW() + interval \'5 minutes\' WHERE id = $2';
+  const sql = 'UPDATE users SET verification_code = $1, verification_code_expires = NOW() + interval \'5 minutes\' WHERE id = $2';
   await query(sql, [newCode, userId]);
 }
 
@@ -14,9 +14,9 @@ export function generateVerificationCode(): string {
 export async function createUser({ id, username, email, passwordHash, public_key_quantum, verificationCode }:{ id: string, username: string, email: string, passwordHash: string, public_key_quantum?: string, verificationCode: string }): Promise<any> {
   const codeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
   const sql = `
-    INSERT INTO users (id, username, email, password_hash, public_key_quantum, verification_code, code_expires_at)
+    INSERT INTO users (id, username, email, password_hash, public_key_quantum, verification_code, verification_code_expires)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING id, username, email, public_key_quantum, verification_code, code_expires_at, created_at
+    RETURNING id, username, email, public_key_quantum, verification_code, verification_code_expires, created_at
   `;
   const publicKeyParam = public_key_quantum == null ? '' : public_key_quantum;
   const params = [id, username, email, passwordHash, publicKeyParam, verificationCode, codeExpiresAt];
@@ -105,7 +105,7 @@ export async function getUserById(userId: string): Promise<any> {
 // Validar código de verificación
 export async function validateVerificationCode(userId: string, code: string): Promise<any> {
   const sql = `
-    SELECT id, username, email, verification_code, code_expires_at
+    SELECT id, username, email, verification_code, verification_code_expires
     FROM users
     WHERE id = $1 AND verification_code = $2
   `;
@@ -116,7 +116,7 @@ export async function validateVerificationCode(userId: string, code: string): Pr
   }
   const user = res.rows[0];
   const now = new Date();
-  if (now > user.code_expires_at) {
+  if (now > user.verification_code_expires) {
     return { valid: false, message: 'Verification code has expired' };
   }
   return { valid: true, user };

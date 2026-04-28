@@ -18,6 +18,7 @@ export interface MessagePayload {
   messageType?: string; // 'text', 'image', etc.
   encryptedContent?: string;
   iv?: string; // Vector de inicialización para AES/Kyber
+  encapsulatedKey?: string; // Clave encapsulada (Base64)
 }
 
 // El paquete completo que maneja el Servidor y recibe el Destinatario (Output)
@@ -32,6 +33,7 @@ export interface MessagePacket {
   delivered: boolean;
   iv?: string;       // Vector de inicialización
   isPending?: boolean; // Para marcar si fue recuperado del buzón offline
+  encapsulatedKey?: string; // Clave encapsulada (Base64)
 }
 
 // Qué puede enviar tu App Android/Web al Node.js
@@ -41,7 +43,7 @@ export interface ClientToServerEvents {
   'get-online-users': () => void;
   
   // Mensajería
-  'send-message': (data: MessagePayload) => void;
+  'send-message': (data: MessagePayload) => void; // Ahora MessagePayload incluye encapsulatedKey
   'typing-indicator': (data: { recipientId: string; isTyping: boolean }) => void;
   'message-read': (data: { senderId: string; messageId: string }) => void;
 }
