@@ -1,6 +1,8 @@
 import express, { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { register, login, verify, resend } from '../controllers/authController';
+import { authenticateToken } from '../middleware/authMiddleware';
+import { updateKey } from '../controllers/authController';
 
 const router: Router = express.Router();
 
@@ -22,5 +24,6 @@ router.post('/register', registerLimiter, register);
 router.post('/login', loginLimiter, login);
 router.post('/verify', verify);
 router.post('/resend', resend);
+router.post('/update-key', authenticateToken, updateKey);
 
 export default router;

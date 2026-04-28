@@ -121,3 +121,9 @@ export async function validateVerificationCode(userId: string, code: string): Pr
   }
   return { valid: true, user };
 }
+
+// Actualizar clave pública del usuario
+export async function updatePublicKeyQuantum(userId: string, publicKey: string): Promise<void> {
+  const sql = 'UPDATE users SET public_key_quantum = $1 WHERE id = $2';
+  await query(sql, [publicKey, userId]);
+}

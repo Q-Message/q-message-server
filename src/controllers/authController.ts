@@ -5,6 +5,8 @@ import * as logger from '../utils/logger';
 import * as emailService from '../utils/emailService';
 import { query } from '../config/db';
 import jwt from 'jsonwebtoken';
+import { updatePublicKeyQuantum } from '../models/users';
+import { AuthenticatedRequest } from '../middleware/authMiddleware';
 
 interface RegisterBody {
 	username: string;
@@ -202,4 +204,23 @@ export async function resend(req: Request<{}, {}, ResendBody>, res: Response) {
 		console.error('Error en resend:', error);
 		return res.status(500).json({ error: 'Error interno' });
 	}
+}
+
+// POST /api/auth/update-key
+export async function updateKey(req: AuthenticatedRequest, res: Response) {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const { public_key_quantum } = req.body;
+    if (!public_key_quantum) {
+      return res.status(400).json({ error: 'Falta el campo public_key_quantum' });
+    }
+    await updatePublicKeyQuantum(userId, public_key_quantum);
+    return res.status(200).json({ message: 'Clave actualizada' });
+  } catch (err) {
+    console.error('Error en update-key:', err);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
 }

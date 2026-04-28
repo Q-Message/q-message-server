@@ -13,7 +13,9 @@ export async function getPendingMessages(req: Request, res: Response) {
 				 id, sender_id as "senderId", recipient_id as "recipientId",
 				 content, encrypted_content as "encryptedContent",
 				 message_type as "messageType",
-				 sent_at as "timestamp"
+				 sent_at as "timestamp",
+				 initialization_vector as "iv",
+				 encapsulated_key as "encapsulatedKey"
 			 FROM pending_messages
 			 WHERE recipient_id = $1
 			 ORDER BY sent_at ASC`,
@@ -58,7 +60,9 @@ export async function getMessagesWithContact(req: Request, res: Response) {
 				 id, sender_id as "senderId", recipient_id as "recipientId", 
 				 content, encrypted_content as "encryptedContent", 
 				 message_type as "messageType", 
-				 sent_at as "timestamp"
+				 sent_at as "timestamp",
+				 initialization_vector as "iv",
+				 encapsulated_key as "encapsulatedKey"
 			 FROM pending_messages
 			 WHERE (sender_id = $1 AND recipient_id = $2) OR (sender_id = $2 AND recipient_id = $1)
 			 ORDER BY sent_at ASC`,
