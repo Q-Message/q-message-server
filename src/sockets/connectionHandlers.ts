@@ -1,48 +1,19 @@
 import { Server, Socket } from 'socket.io';
-import { 
-  ClientToServerEvents, 
-  ServerToClientEvents, 
-  InterServerEvents, 
-  SocketData, 
-  ConnectedUsersMap 
+import {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData,
+  ConnectedUsersMap
 } from '../types/index';
-
-/**
- * Gestiona eventos de conexión, desconexión y cambios de estado.
- */
-import jwt from 'jsonwebtoken';
 
 export default function setupConnectionHandlers(
   io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
   socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>,
   connectedUsers: ConnectedUsersMap
 ) {
-  // Esperar a que el cliente envíe el token por el evento 'register'
-  socket.on('register', (token: string) => {
-    if (!token || typeof token !== 'string') {
-      socket.emit('message-error', { error: 'Token requerido para registrar socket' });
-      socket.disconnect();
-      return;
-    }
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string; username: string };
-      socket.data.userId = decoded.userId;
-      socket.data.username = decoded.username;
-      connectedUsers[decoded.userId] = socket.id;
-      // Obtener la IP real del usuario
-      let ip = socket.handshake.headers['x-forwarded-for'] as string | undefined;
-      if (ip) {
-        ip = ip.split(',')[0].trim();
-      } else {
-        ip = socket.handshake.address;
-      }
-      console.log(`Socket autenticado: ${decoded.username} (${decoded.userId}) | ip: ${ip}`);
-    } catch (err) {
-      socket.emit('message-error', { error: 'Token inválido o expirado' });
-      socket.disconnect();
-      return;
-    }
-  });
+  // La autenticación del socket (evento 'register') se gestiona únicamente en server.ts.
+  // Aquí solo se montan los handlers de estado, presencia y desconexión.
 
   // El resto de eventos solo funcionarán si el usuario está autenticado
   socket.on('set-status', (data) => {

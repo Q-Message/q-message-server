@@ -16,14 +16,20 @@ const registerLimiter = rateLimit({
 // Limitador de tasa para login
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 10,
   message: { error: 'Demasiados intentos de login, prueba más tarde' }
+});
+
+const resendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { error: 'Demasiadas solicitudes de reenvío, prueba más tarde' }
 });
 
 router.post('/register', registerLimiter, register);
 router.post('/login', loginLimiter, login);
 router.post('/verify', verify);
-router.post('/resend', resend);
+router.post('/resend', resendLimiter, resend);
 router.post('/update-key', authenticateToken, updateKey);
 
 export default router;

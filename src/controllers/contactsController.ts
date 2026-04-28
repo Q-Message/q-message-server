@@ -114,14 +114,26 @@ export async function deleteContact(req: Request, res: Response) {
 	try {
 		const userId = (req as any).user.userId;
 		const contactId = req.params.contactId;
+
+		const ownership = await query(
+			'SELECT 1 FROM contacts WHERE user_id = $1 AND contact_id = $2',
+			[userId, contactId]
+		);
+		if (ownership.rows.length === 0) {
+			return res.status(403).json({ error: 'Contacto no encontrado' });
+		}
+
 		const currentUserResult = await query(
 			'SELECT id, username FROM users WHERE id = $1',
 			[userId]
 		);
-		await query(
+		const result = await query(
 			'DELETE FROM contacts WHERE (user_id = $1 AND contact_id = $2) OR (user_id = $2 AND contact_id = $1)',
 			[userId, contactId]
 		);
+		if (!result.rowCount || result.rowCount === 0) {
+			return res.status(404).json({ error: 'Contacto no encontrado' });
+		}
 		const contactSocketId = (req as any).connectedUsers ? (req as any).connectedUsers[contactId] : null;
 		if (contactSocketId && (req as any).io) {
 			(req as any).io.to(contactSocketId).emit('contact-removed', {
