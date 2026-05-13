@@ -26,7 +26,7 @@ export default function setupMessageHandlers(
    */
   socket.on('send-message', async (data) => {
     // TypeScript sabe que 'data' es de tipo MessagePayload
-    const { recipientId, content, messageType = 'text', encryptedContent, iv, encapsulatedKey } = data;
+    const { recipientId, content, messageType = 'text', encryptedContent, iv, encapsulatedKey, messageId } = data;
     const timestamp = new Date().toISOString();
 
     if (!recipientId) {
@@ -47,11 +47,12 @@ export default function setupMessageHandlers(
       recipientId,
       content,
       messageType,
-      encryptedContent, 
-      iv,              
+      encryptedContent,
+      iv,
+      encapsulatedKey,
+      messageId,
       timestamp,
       delivered: false,
-      encapsulatedKey,
     };
 
     const recipientSocketId = connectedUsers[recipientId];

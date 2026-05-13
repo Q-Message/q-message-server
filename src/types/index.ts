@@ -14,11 +14,12 @@ export interface SocketData {
 // Lo que el Cliente envía al Servidor (Input)
 export interface MessagePayload {
   recipientId: string;
-  content: string; 
+  content: string;
   messageType?: string; // 'text', 'image', etc.
   encryptedContent?: string;
   iv?: string; // Vector de inicialización para AES/Kyber
   encapsulatedKey?: string; // Clave encapsulada (Base64)
+  messageId?: string; // ID local del mensaje (Android)
 }
 
 // El paquete completo que maneja el Servidor y recibe el Destinatario (Output)
@@ -31,9 +32,10 @@ export interface MessagePacket {
   encryptedContent?: string;
   timestamp: string; // ISO String
   delivered: boolean;
-  iv?: string;       // Vector de inicialización
-  isPending?: boolean; // Para marcar si fue recuperado del buzón offline
-  encapsulatedKey?: string; // Clave encapsulada (Base64)
+  iv?: string;
+  encapsulatedKey?: string;
+  messageId?: string;
+  isPending?: boolean;
 }
 
 // Qué puede enviar tu App Android/Web al Node.js
